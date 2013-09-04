@@ -8,12 +8,18 @@ using Wsdot.Gtfs.IO;
 
 namespace GtfsService
 {
+	/// <summary>
+	/// Request for an agencies GTFS feed.
+	/// </summary>
 	[Route("/feed/{agency}")]
 	public class Feed
 	{
 		public string agency { get; set; }
 	}
 
+	/// <summary>
+	/// Retrieves a GTFS ZIP file and converts the CSV files to objects.
+	/// </summary>
 	public class FeedService : Service
 	{
 		public GtfsFeed Any(Feed request)
