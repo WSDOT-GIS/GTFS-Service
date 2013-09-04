@@ -1,8 +1,10 @@
 ﻿using ServiceStack.CacheAccess;
 using ServiceStack.CacheAccess.Providers;
+using ServiceStack.Text;
 using ServiceStack.WebHost.Endpoints;
 using System;
 using System.Reflection;
+using Wsdot.Gtfs.Contract;
 
 namespace GtfsService
 {
@@ -12,7 +14,8 @@ namespace GtfsService
 		{
 			public AppHost(): base("GTFS Services", Assembly.GetExecutingAssembly())
 			{
-
+				JsConfig.TimeSpanHandler = JsonTimeSpanHandler.StandardFormat;
+				JsConfig.TreatEnumAsInteger = true;
 			}
 
 			public override void Configure(Funq.Container container)
