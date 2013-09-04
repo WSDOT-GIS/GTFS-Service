@@ -11,9 +11,15 @@ using System.IO;
 
 namespace GtfsService
 {
+	/// <summary>
+	/// Gets a list of agencies.
+	/// </summary>
 	[Route("/agencies")]
+	[Route("/agencies/{dataexchange_id}")]
+	[Route("/agency/{dataexchange_id}")]
 	public class Agencies
 	{
+		public string dataexchange_id { get; set; }
 	}
 
 	public class AgenciesService: Service
@@ -24,7 +30,10 @@ namespace GtfsService
 		/// <param name="request"></param>
 		public void Any(Agencies request)
 		{
-			var url = ConfigurationManager.AppSettings["gtfs-url"].TrimEnd('/') + "/api/agencies";
+			Console.WriteLine(base.Request.GetFormatModifier());
+			var url = ConfigurationManager.AppSettings["gtfs-url"].TrimEnd('/');
+			var urlSuffix = string.IsNullOrWhiteSpace(request.dataexchange_id) ? "/api/agencies" : string.Format("/api/agency?agency={0}", request.dataexchange_id);
+			url = url + urlSuffix;
 			base.Response.RedirectToUrl(url);
 		}
 	}
