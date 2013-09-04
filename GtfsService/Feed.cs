@@ -14,6 +14,9 @@ namespace GtfsService
 	[Route("/feed/{agency}")]
 	public class Feed
 	{
+		/// <summary>
+		/// The gtfs-data-exchange.com agency id.
+		/// </summary>
 		public string agency { get; set; }
 	}
 
