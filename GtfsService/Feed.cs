@@ -11,7 +11,7 @@ namespace GtfsService
 	/// <summary>
 	/// Request for an agencies GTFS feed.
 	/// </summary>
-	[Route("/feed/{agency}")]
+	[Route("/feed/{agency}", "GET,POST", Summary = "Returns the GTFS data for a specified agency.", Notes = "Agency IDs correspond to the <a href='http://www.gtfs-data-exchange.com/agencies'>dataexchange_id</a> provided by <a href='http://www.gtfs-data-exchange.com/agencies'>GTFS-Data-Exchange</a>.")]
 	public class Feed
 	{
 		/// <summary>
