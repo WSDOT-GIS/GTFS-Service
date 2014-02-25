@@ -72,7 +72,7 @@ namespace GtfsService
 						}).Wait();
 					}).Wait();
 
-					if (feedRecord == null || (agencyResponse.data.agency.date_last_updated > feedRecord.DateLastUpdated))
+					if (feedRecord == null || (agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset() > feedRecord.DateLastUpdated))
 					{
 						// Get the GTFS file...
 						Uri zipUri = new Uri(String.Join("/", agencyResponse.data.agency.dataexchange_url.TrimEnd('/'), "latest.zip"));
@@ -97,7 +97,7 @@ namespace GtfsService
 								{
 									GtfsData = gtfs,
 									AgencyId = agencyId,
-									DateLastUpdated = agencyResponse.data.agency.date_last_updated
+									DateLastUpdated = agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset()
 								});
 							}).Wait();
 						}).Wait();

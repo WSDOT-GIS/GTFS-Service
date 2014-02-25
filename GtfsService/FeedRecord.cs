@@ -15,7 +15,7 @@ namespace GtfsService
 	internal class FeedRecord
 	{
 		public string AgencyId { get; set; }
-		public double DateLastUpdated { get; set; }
+		public DateTimeOffset DateLastUpdated { get; set; }
 		public GtfsFeed GtfsData { get; set; }
 	}
 }
