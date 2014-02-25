@@ -37,8 +37,9 @@ namespace GtfsService
 		/// and stored for future use.
 		/// </summary>
 		/// <param name="agencyId">The GTFS-Data-Exchange agency identifier.</param>
+		/// <param name="lastModified">If an "If-Modified-Since" header is present, that value can be used here. Otherwise omit.</param>
 		/// <returns></returns>
-		public GtfsFeed this[string agencyId]
+		public FeedRecord this[string agencyId, DateTimeOffset? lastModified = default(DateTimeOffset?)]
 		{
 			get {
 				if (string.IsNullOrWhiteSpace(agencyId))
@@ -72,35 +73,51 @@ namespace GtfsService
 						}).Wait();
 					}).Wait();
 
-					if (feedRecord == null || (agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset() > feedRecord.DateLastUpdated))
+					if (lastModified.HasValue && lastModified.Value >= agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset())
 					{
-						// Get the GTFS file...
-						Uri zipUri = new Uri(String.Join("/", agencyResponse.data.agency.dataexchange_url.TrimEnd('/'), "latest.zip"));
-
-						// TODO: make the request and parse the GTFS...
-						if (client == null) client = new HttpClient();
-
-						client.GetStreamAsync(zipUri).ContinueWith(t => {
-
-							Task.Run(() =>
+						if (feedRecord == null)
+						{
+							feedRecord = new FeedRecord
 							{
-								gtfs = GtfsReader.ReadGtfs(t.Result);
-							}).ContinueWith((gtfsTask) =>
+								DateLastUpdated = lastModified.Value
+							};
+						}
+					}
+					else
+					{
+
+						if (feedRecord == null || (agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset() > feedRecord.DateLastUpdated))
+						{
+							// Get the GTFS file...
+							Uri zipUri = new Uri(String.Join("/", agencyResponse.data.agency.dataexchange_url.TrimEnd('/'), "latest.zip"));
+
+							// TODO: make the request and parse the GTFS...
+							if (client == null) client = new HttpClient();
+
+							client.GetStreamAsync(zipUri).ContinueWith(t =>
 							{
-								// Delete the existing feedRecord.
-								if (feedRecord != null)
+
+								Task.Run(() =>
 								{
-									_feedList.Remove(feedRecord);
-								}
-								// Add the new GTFS feed data to the in-memory collection.
-								_feedList.Add(new FeedRecord
+									gtfs = GtfsReader.ReadGtfs(t.Result);
+								}).ContinueWith((gtfsTask) =>
 								{
-									GtfsData = gtfs,
-									AgencyId = agencyId,
-									DateLastUpdated = agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset()
-								});
+									// Delete the existing feedRecord.
+									if (feedRecord != null)
+									{
+										_feedList.Remove(feedRecord);
+									}
+									feedRecord = new FeedRecord
+									{
+										GtfsData = gtfs,
+										AgencyId = agencyId,
+										DateLastUpdated = agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset()
+									};
+									// Add the new GTFS feed data to the in-memory collection.
+									_feedList.Add(feedRecord);
+								}).Wait();
 							}).Wait();
-						}).Wait();
+						}
 					}
 
 				}
@@ -115,7 +132,8 @@ namespace GtfsService
 
 
 
-				return gtfs;
+				return feedRecord;
+
 			}
 		}
 		
