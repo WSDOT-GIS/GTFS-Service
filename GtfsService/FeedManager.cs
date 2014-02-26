@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using System.Web;
 using Wsdot.Gtfs.Contract;
 using Wsdot.Gtfs.IO;
 
@@ -66,8 +65,8 @@ namespace GtfsService
 		/// <returns>Returns a <see cref="FeedRequestResponse"/>.</returns>
 		/// <exception cref="ArgumentException">Thrown if <paramref name="agencyId"/> is <see langword="null"/> or consists only of whitespace.</exception>
 		/// <exception cref="AgencyQueryException">Thrown if the query to gtfs-data-exchange for information fails.</exception>
-		public FeedRequestResponse GetGtfs(string agencyId, 
-DateTimeOffset? lastModified = default(DateTimeOffset?), 
+		public FeedRequestResponse GetGtfs(string agencyId,
+DateTimeOffset? lastModified = default(DateTimeOffset?),
 			IEnumerable<EntityTagHeaderValue> etags = null)
 		{
 			if (string.IsNullOrWhiteSpace(agencyId))
@@ -75,7 +74,6 @@ DateTimeOffset? lastModified = default(DateTimeOffset?),
 				throw new ArgumentException("The agencyId was not provided.");
 			}
 
-			HttpClient client = null;
 			// Get the record with the matching agency ID.
 			var feedRecord = _feedList.FirstOrDefault(r => string.Compare(r.AgencyId, agencyId, true) == 0);
 
@@ -88,6 +86,8 @@ DateTimeOffset? lastModified = default(DateTimeOffset?),
 					return new FeedRequestResponse { NotModified = true };
 				}
 			}
+
+			HttpClient client = null;
 			GtfsFeed gtfs = feedRecord != null ? feedRecord.GtfsData : null;
 			EntityTagHeaderValue outEtag = null;
 
@@ -118,14 +118,19 @@ DateTimeOffset? lastModified = default(DateTimeOffset?),
 					outEtag = t.Result.Headers.ETag;
 					if (t.Result.StatusCode == HttpStatusCode.NotModified)
 					{
-						output = new FeedRequestResponse {
+						output = new FeedRequestResponse
+						{
 							NotModified = true
 						};
 					}
 					else if (t.Result.StatusCode == HttpStatusCode.OK)
 					{
-						t.Result.Content.ReadAsStringAsync().ContinueWith(strTask => {
-							JsonConvert.DeserializeObjectAsync<AgencyResponse>(strTask.Result).ContinueWith(agencyResponseTask =>
+						t.Result.Content.ReadAsStringAsync().ContinueWith(strTask =>
+						{
+
+							Task.Factory.StartNew<AgencyResponse>(() => { 
+								return JsonConvert.DeserializeObject<AgencyResponse>(strTask.Result); 
+							}).ContinueWith(agencyResponseTask =>
 							{
 								agencyResponse = agencyResponseTask.Result;
 							}).Wait();
@@ -134,69 +139,67 @@ DateTimeOffset? lastModified = default(DateTimeOffset?),
 				}).Wait();
 
 				// If the request for GTFS info returned a "Not Modified" response, return now.
-				if (output != null)
+				if (output == null)
 				{
-					return output;
-				}
-
-				if (agencyResponse.status_code != 200)
-				{
-					throw new AgencyQueryException(agencyResponse);
-				}
-
-				if (lastModified.HasValue && lastModified.Value >= agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset())
-				{
-					if (feedRecord == null)
+					if (agencyResponse.status_code != 200)
 					{
-						feedRecord = new FeedRecord
-						{
-							DateLastUpdated = lastModified.Value,
-							Etag = outEtag
-						};
+						throw new AgencyQueryException(agencyResponse);
 					}
-				}
-				else
-				{
 
-					if (feedRecord == null || (agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset() > feedRecord.DateLastUpdated))
+					if (lastModified.HasValue && lastModified.Value >= agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset())
 					{
-						// Get the GTFS file...
-						Uri zipUri = new Uri(String.Join("/", agencyResponse.data.agency.dataexchange_url.TrimEnd('/'), "latest.zip"));
-
-						// TODO: make the request and parse the GTFS...
-						if (client == null)
+						if (feedRecord == null)
 						{
-							client = new HttpClient();
-						}
-						else
-						{
-							client.DefaultRequestHeaders.Clear();
-						}
-
-						client.GetStreamAsync(zipUri).ContinueWith(t =>
-						{
-
-							Task.Run(() =>
+							feedRecord = new FeedRecord
 							{
-								gtfs = GtfsReader.ReadGtfs(t.Result);
-							}).ContinueWith((gtfsTask) =>
+								DateLastUpdated = lastModified.Value,
+								Etag = outEtag
+							};
+						}
+					}
+					else
+					{
+
+						if (feedRecord == null || (agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset() > feedRecord.DateLastUpdated))
+						{
+							// Get the GTFS file...
+							Uri zipUri = new Uri(String.Join("/", agencyResponse.data.agency.dataexchange_url.TrimEnd('/'), "latest.zip"));
+
+							// TODO: make the request and parse the GTFS...
+							if (client == null)
 							{
-								// Delete the existing feedRecord.
-								if (feedRecord != null)
+								client = new HttpClient();
+							}
+							else
+							{
+								client.DefaultRequestHeaders.Clear();
+							}
+
+							client.GetStreamAsync(zipUri).ContinueWith(t =>
+							{
+
+								Task.Run(() =>
 								{
-									_feedList.Remove(feedRecord);
-								}
-								feedRecord = new FeedRecord
+									gtfs = GtfsReader.ReadGtfs(t.Result);
+								}).ContinueWith((gtfsTask) =>
 								{
-									GtfsData = gtfs,
-									AgencyId = agencyId,
-									DateLastUpdated = agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset(),
-									Etag = outEtag
-								};
-								// Add the new GTFS feed data to the in-memory collection.
-								_feedList.Add(feedRecord);
+									// Delete the existing feedRecord.
+									if (feedRecord != null)
+									{
+										_feedList.Remove(feedRecord);
+									}
+									feedRecord = new FeedRecord
+									{
+										GtfsData = gtfs,
+										AgencyId = agencyId,
+										DateLastUpdated = agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset(),
+										Etag = outEtag
+									};
+									// Add the new GTFS feed data to the in-memory collection.
+									_feedList.Add(feedRecord);
+								}).Wait();
 							}).Wait();
-						}).Wait();
+						}
 					}
 				}
 
@@ -219,6 +222,6 @@ DateTimeOffset? lastModified = default(DateTimeOffset?),
 
 
 		}
-		
+
 	}
 }
