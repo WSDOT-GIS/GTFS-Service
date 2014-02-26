@@ -1,11 +1,6 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Web;
+﻿using System;
+using System.Net.Http.Headers;
 using Wsdot.Gtfs.Contract;
-using Wsdot.Gtfs.IO;
 
 namespace GtfsService
 {
@@ -17,5 +12,6 @@ namespace GtfsService
 		public string AgencyId { get; set; }
 		public DateTimeOffset DateLastUpdated { get; set; }
 		public GtfsFeed GtfsData { get; set; }
+		public EntityTagHeaderValue Etag { get; set; }
 	}
 }

@@ -82,6 +82,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AgencyQueryException.cs" />
     <Compile Include="AgencyResponse.cs" />
     <Compile Include="Controllers\AgencyController.cs" />
     <Compile Include="Controllers\FeedController.cs" />

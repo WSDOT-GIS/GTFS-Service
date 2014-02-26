@@ -19,27 +19,46 @@ namespace GtfsService.Controllers
 		public HttpResponseMessage Get(string agency)
 		{
 			DateTimeOffset? ifModifiedSince = Request.Headers.IfModifiedSince;
-
-			FeedRecord feedRecord = _feedManager[agency, ifModifiedSince];
-
+			HttpHeaderValueCollection<EntityTagHeaderValue> eTags = Request.Headers.IfNoneMatch;
 			HttpResponseMessage output;
 
-			if (ifModifiedSince.HasValue && feedRecord.DateLastUpdated <= ifModifiedSince.Value)
+			try
 			{
-				output = Request.CreateResponse(HttpStatusCode.NotModified);
-			}
-			else
-			{
-				output = Request.CreateResponse<GtfsFeed>(feedRecord.GtfsData);
-				output.Headers.Add("Date-Last-Modified", feedRecord.DateLastUpdated.ToString());
-			}
+				var feedResponse = _feedManager.GetGtfs(agency, ifModifiedSince, eTags);
 
-			output.Headers.CacheControl = new CacheControlHeaderValue
-			{
-				NoCache = false,
-				Public = true
-			};
+				if (feedResponse.NotModified)
+				{
+					output = Request.CreateResponse(HttpStatusCode.NotModified);
+					output.Headers.CacheControl = new CacheControlHeaderValue();
+				}
+				else
+				{
+					var feedRecord = feedResponse.FeedRecord;
 
+					if (ifModifiedSince.HasValue && feedRecord.DateLastUpdated <= ifModifiedSince.Value)
+					{
+						output = Request.CreateResponse(HttpStatusCode.NotModified);
+					}
+					else
+					{
+						output = Request.CreateResponse<GtfsFeed>(feedRecord.GtfsData);
+						output.Headers.Add("Date-Last-Modified", feedRecord.DateLastUpdated.ToString());
+					}
+
+					output.Headers.CacheControl = new CacheControlHeaderValue
+					{
+						NoCache = false,
+						Public = true
+					};
+					output.Headers.ETag = feedRecord.Etag;
+				}
+
+			}
+			catch (AgencyQueryException ex)
+			{
+				// Handle cases where the agency is not valid.
+				output = Request.CreateErrorResponse((HttpStatusCode)ex.StatusCode, ex.Message);
+			}
 			return output;
 		}
 	}

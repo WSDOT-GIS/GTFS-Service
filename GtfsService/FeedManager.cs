@@ -2,7 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Web;
 using Wsdot.Gtfs.Contract;
@@ -30,6 +32,12 @@ namespace GtfsService
 			return _instance;
 		}
 
+		public class FeedRequestResponse
+		{
+			public bool NotModified { get; set; }
+			public FeedRecord FeedRecord { get; set; }
+		}
+
 		/// <summary>
 		/// Retrieves GTFS data for a specified agency.
 		/// Data will be retrieved from an in-memory list if available and up-to-date.
@@ -39,102 +47,159 @@ namespace GtfsService
 		/// <param name="agencyId">The GTFS-Data-Exchange agency identifier.</param>
 		/// <param name="lastModified">If an "If-Modified-Since" header is present, that value can be used here. Otherwise omit.</param>
 		/// <returns></returns>
-		public FeedRecord this[string agencyId, DateTimeOffset? lastModified = default(DateTimeOffset?)]
+		/// <exception cref="AgencyQueryException"></exception>
+		public FeedRequestResponse GetGtfs(string agencyId, 
+DateTimeOffset? lastModified = default(DateTimeOffset?), 
+			IEnumerable<EntityTagHeaderValue> etags = null)
 		{
-			get {
-				if (string.IsNullOrWhiteSpace(agencyId))
+			if (string.IsNullOrWhiteSpace(agencyId))
+			{
+				throw new ArgumentException("The agencyId was not provided.");
+			}
+
+			HttpClient client = null;
+			// Get the record with the matching agency ID.
+			var feedRecord = _feedList.FirstOrDefault(r => string.Compare(r.AgencyId, agencyId, true) == 0);
+
+			// Check to see if there are matching Etags...
+			if (feedRecord != null && feedRecord.Etag != null && etags != null)
+			{
+				var match = etags.FirstOrDefault(et => et == feedRecord.Etag);
+				if (match != null)
 				{
-					throw new ArgumentException("The agencyId was not provided.");
+					return new FeedRequestResponse { NotModified = true };
+				}
+			}
+			GtfsFeed gtfs = feedRecord != null ? feedRecord.GtfsData : null;
+			EntityTagHeaderValue outEtag = null;
+
+			AgencyResponse agencyResponse = null;
+			FeedRequestResponse output = null;
+
+			try
+			{
+				// Check for an existing record...
+
+				// Check online to see if there is a newer feed available. 
+				// This will be skipped if there is no matching GTFS feed stored for the specified agency.
+				const string urlFmt = "http://www.gtfs-data-exchange.com/api/agency?agency={0}";
+				Uri uri = new Uri(string.Format(urlFmt, agencyId));
+
+				client = new HttpClient();
+				client.DefaultRequestHeaders.IfModifiedSince = lastModified;
+				if (etags != null)
+				{
+					foreach (var etag in etags)
+					{
+						client.DefaultRequestHeaders.IfNoneMatch.Add(etag);
+					}
 				}
 
-				HttpClient client = null;
-				// Get the record with the matching agency ID.
-				var feedRecord = _feedList.FirstOrDefault(r => string.Compare(r.AgencyId, agencyId, true) == 0);
-				GtfsFeed gtfs = feedRecord != null ? feedRecord.GtfsData : null;
-				
-				AgencyResponse agencyResponse = null;
-
-				try
+				client.GetAsync(uri).ContinueWith((t) =>
 				{
-					// Check for an existing record...
-
-					// Check online to see if there is a newer feed available. 
-					// This will be skipped if there is no matching GTFS feed stored for the specified agency.
-					const string urlFmt = "http://www.gtfs-data-exchange.com/api/agency?agency={0}";
-					Uri uri = new Uri(string.Format(urlFmt, agencyId));
-
-					client = new HttpClient();
-
-					client.GetStringAsync(uri).ContinueWith((t) =>
+					outEtag = t.Result.Headers.ETag;
+					if (t.Result.StatusCode == HttpStatusCode.NotModified)
 					{
-						JsonConvert.DeserializeObjectAsync<AgencyResponse>(t.Result).ContinueWith(agencyResponseTask =>
-						{
-							agencyResponse = agencyResponseTask.Result;
-						}).Wait();
-					}).Wait();
-
-					if (lastModified.HasValue && lastModified.Value >= agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset())
-					{
-						if (feedRecord == null)
-						{
-							feedRecord = new FeedRecord
-							{
-								DateLastUpdated = lastModified.Value
-							};
-						}
+						output = new FeedRequestResponse {
+							NotModified = true
+						};
 					}
-					else
+					else if (t.Result.StatusCode == HttpStatusCode.OK)
 					{
-
-						if (feedRecord == null || (agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset() > feedRecord.DateLastUpdated))
-						{
-							// Get the GTFS file...
-							Uri zipUri = new Uri(String.Join("/", agencyResponse.data.agency.dataexchange_url.TrimEnd('/'), "latest.zip"));
-
-							// TODO: make the request and parse the GTFS...
-							if (client == null) client = new HttpClient();
-
-							client.GetStreamAsync(zipUri).ContinueWith(t =>
+						t.Result.Content.ReadAsStringAsync().ContinueWith(strTask => { 
+							JsonConvert.DeserializeObjectAsync<AgencyResponse>(strTask.Result).ContinueWith(agencyResponseTask =>
 							{
-
-								Task.Run(() =>
-								{
-									gtfs = GtfsReader.ReadGtfs(t.Result);
-								}).ContinueWith((gtfsTask) =>
-								{
-									// Delete the existing feedRecord.
-									if (feedRecord != null)
-									{
-										_feedList.Remove(feedRecord);
-									}
-									feedRecord = new FeedRecord
-									{
-										GtfsData = gtfs,
-										AgencyId = agencyId,
-										DateLastUpdated = agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset()
-									};
-									// Add the new GTFS feed data to the in-memory collection.
-									_feedList.Add(feedRecord);
-								}).Wait();
+								agencyResponse = agencyResponseTask.Result;
 							}).Wait();
-						}
+						}).Wait();
 					}
+				}).Wait();
 
-				}
-				finally
+				// If the request for GTFS info returned a "Not Modified" response, return now.
+				if (output != null)
 				{
-					if (client != null)
-					{
-						client.Dispose();
-					}
+					return output;
 				}
 
+				if (agencyResponse.status_code != 200)
+				{
+					throw new AgencyQueryException(agencyResponse);
+				}
 
+				if (lastModified.HasValue && lastModified.Value >= agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset())
+				{
+					if (feedRecord == null)
+					{
+						feedRecord = new FeedRecord
+						{
+							DateLastUpdated = lastModified.Value,
+							Etag = outEtag
+						};
+					}
+				}
+				else
+				{
 
+					if (feedRecord == null || (agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset() > feedRecord.DateLastUpdated))
+					{
+						// Get the GTFS file...
+						Uri zipUri = new Uri(String.Join("/", agencyResponse.data.agency.dataexchange_url.TrimEnd('/'), "latest.zip"));
 
-				return feedRecord;
+						// TODO: make the request and parse the GTFS...
+						if (client == null)
+						{
+							client = new HttpClient();
+						}
+						else
+						{
+							client.DefaultRequestHeaders.Clear();
+						}
+
+						client.GetStreamAsync(zipUri).ContinueWith(t =>
+						{
+
+							Task.Run(() =>
+							{
+								gtfs = GtfsReader.ReadGtfs(t.Result);
+							}).ContinueWith((gtfsTask) =>
+							{
+								// Delete the existing feedRecord.
+								if (feedRecord != null)
+								{
+									_feedList.Remove(feedRecord);
+								}
+								feedRecord = new FeedRecord
+								{
+									GtfsData = gtfs,
+									AgencyId = agencyId,
+									DateLastUpdated = agencyResponse.data.agency.date_last_updated.FromJSDateToDateTimeOffset(),
+									Etag = outEtag
+								};
+								// Add the new GTFS feed data to the in-memory collection.
+								_feedList.Add(feedRecord);
+							}).Wait();
+						}).Wait();
+					}
+				}
 
 			}
+			finally
+			{
+				if (client != null)
+				{
+					client.Dispose();
+				}
+			}
+
+
+
+
+			return new FeedRequestResponse
+			{
+				FeedRecord = feedRecord
+			};
+
+
 		}
 		
 	}
