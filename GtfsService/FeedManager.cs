@@ -25,16 +25,32 @@ namespace GtfsService
 		{
 		}
 
+		/// <summary>
+		/// Get instance of this Singleton class.
+		/// </summary>
+		/// <returns></returns>
 		public static FeedManager GetInstance()
 		{
 			if (_instance == null)
+			{
 				_instance = new FeedManager();
+			}
 			return _instance;
 		}
 
+		/// <summary>
+		/// Response from a request for a GTFS data feed from the <see cref="FeedManager"/>.
+		/// </summary>
 		public class FeedRequestResponse
 		{
+			/// <summary>
+			/// Indicates that the data on the GTFS Data Exchange website has not been updated since the previous request.
+			/// </summary>
 			public bool NotModified { get; set; }
+			/// <summary>
+			/// Information about the returned GTFS data (including the GTFS data itself).
+			/// This may be <see langword="null"/> if <see cref="FeedRequestResponse.NotModified"/> is <see langword="true"/>.
+			/// </summary>
 			public FeedRecord FeedRecord { get; set; }
 		}
 
@@ -46,8 +62,10 @@ namespace GtfsService
 		/// </summary>
 		/// <param name="agencyId">The GTFS-Data-Exchange agency identifier.</param>
 		/// <param name="lastModified">If an "If-Modified-Since" header is present, that value can be used here. Otherwise omit.</param>
-		/// <returns></returns>
-		/// <exception cref="AgencyQueryException"></exception>
+		/// <param name="etags">If the HTTP request contains "If-None-Match", it can be passed in here. Otherwise it can be omitted.</param>
+		/// <returns>Returns a <see cref="FeedRequestResponse"/>.</returns>
+		/// <exception cref="ArgumentException">Thrown if <paramref name="agencyId"/> is <see langword="null"/> or consists only of whitespace.</exception>
+		/// <exception cref="AgencyQueryException">Thrown if the query to gtfs-data-exchange for information fails.</exception>
 		public FeedRequestResponse GetGtfs(string agencyId, 
 DateTimeOffset? lastModified = default(DateTimeOffset?), 
 			IEnumerable<EntityTagHeaderValue> etags = null)
@@ -106,7 +124,7 @@ DateTimeOffset? lastModified = default(DateTimeOffset?),
 					}
 					else if (t.Result.StatusCode == HttpStatusCode.OK)
 					{
-						t.Result.Content.ReadAsStringAsync().ContinueWith(strTask => { 
+						t.Result.Content.ReadAsStringAsync().ContinueWith(strTask => {
 							JsonConvert.DeserializeObjectAsync<AgencyResponse>(strTask.Result).ContinueWith(agencyResponseTask =>
 							{
 								agencyResponse = agencyResponseTask.Result;
