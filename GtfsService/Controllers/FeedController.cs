@@ -11,10 +11,18 @@ using Wsdot.Gtfs.IO;
 
 namespace GtfsService.Controllers
 {
+	/// <summary>
+	/// This controller returns data from an agency's GTFS feed.
+	/// </summary>
 	public class FeedController : ApiController
 	{
 		FeedManager _feedManager = FeedManager.GetInstance();
 
+		/// <summary>
+		/// Gets GTFS data from an agency. Supports "If-None-Match" and "If-Modified-Since" headers.
+		/// </summary>
+		/// <param name="agency">GTFS Data Exchange agency ID.</param>
+		/// <returns>Returns an <see cref="HttpResponseMessage">HTTP Response</see> with GTFS data.</returns>
 		[Route("api/feed/{agency}")]
 		public HttpResponseMessage Get(string agency)
 		{

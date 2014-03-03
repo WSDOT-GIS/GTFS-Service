@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using System.Web.Http;
+using System.Web.Mvc;
 using Wsdot.Gtfs.Contract;
 
 namespace GtfsService
@@ -10,6 +11,7 @@ namespace GtfsService
 
 		protected void Application_Start(object sender, EventArgs e)
 		{
+			AreaRegistration.RegisterAllAreas();
 			var config = GlobalConfiguration.Configuration;
 			config.MapHttpAttributeRoutes();
 			config.EnsureInitialized();
