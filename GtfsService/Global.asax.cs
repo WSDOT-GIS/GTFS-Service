@@ -1,8 +1,9 @@
-﻿using System;
-using System.Reflection;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System;
+using System.Net.Http.Formatting;
 using System.Web.Http;
 using System.Web.Mvc;
-using Wsdot.Gtfs.Contract;
 
 namespace GtfsService
 {
@@ -13,6 +14,14 @@ namespace GtfsService
 		{
 			AreaRegistration.RegisterAllAreas();
 			var config = GlobalConfiguration.Configuration;
+			// Configure JSON output...
+			var jsonSettings = config.Formatters.JsonFormatter.SerializerSettings;
+			// Null values will not be written to output.
+			jsonSettings.NullValueHandling = NullValueHandling.Ignore;
+			// Enums will be written as strings instead of ints.
+			jsonSettings.Converters.Add(new StringEnumConverter());
+			jsonSettings.DateFormatHandling = DateFormatHandling.IsoDateFormat;
+
 			config.MapHttpAttributeRoutes();
 			config.EnsureInitialized();
 		}

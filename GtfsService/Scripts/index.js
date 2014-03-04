@@ -41,8 +41,12 @@
 
 	// Setup agency submission.
 	document.forms.agencyForm.onsubmit = function () {
-		/**
+		var progress, request;
+
+		/** Updates the progress meter. 
+		 * Shows the progress meter if it is hidden.
 		 * @param {XMLHttpRequestProgressEvent} e
+		 * @this {XMLHttpRequest}
 		 */
 		function updateProgress(e) {
 			if (progress.hidden) {
@@ -58,19 +62,27 @@
 			console.log("progress event", e);
 		}
 
-		/**
+		/** Processes the GTFS data.
 		 * @param {XMLHttpRequestProgressEvent} e
+		 * @this {XMLHttpRequest}
 		 */
 		function handleResponse(e) {
 			var gtfs;
-			gtfs = e.target.response;
-			console.log("gtfs", gtfs);
 			progress.hidden = true;
+			if (e.target.status === 500) {
+				alert(e.target.response);
+				console.error(e.target.statusText);
+			} else {
+				gtfs = e.target.response;
+				console.log("gtfs", gtfs);
+			}
+
 		}
 
-		var progress = document.getElementById("agencyProgress");
+		progress = document.getElementById("agencyProgress");
 
-		var request = new XMLHttpRequest();
+		// Create the HTTP request for the selected agency's GTFS data.
+		request = new XMLHttpRequest();
 		request.responseType = "json";
 		request.addEventListener("loadstart", updateProgress);
 		request.addEventListener("progress", updateProgress);
@@ -78,6 +90,7 @@
 		request.open("GET", ["api/feed/", document.getElementById("agencySelect").value].join(""));
 		request.send();
 
+		// Returning false so the form does not actually get submitted (prevents page from reloading).
 		return false;
 	};
 }());
