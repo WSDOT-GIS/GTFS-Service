@@ -1,4 +1,5 @@
-﻿(function () {
+﻿/*global L*/
+(function () {
 	"use strict";
 
 	var map = L.map('map').setView([47.41322033015946, -120.80566406246835], 7);
@@ -81,6 +82,19 @@
 			} else {
 				gtfs = e.target.response;
 				console.log("gtfs", gtfs);
+				// Add GeoJSON layers for Stops and Shapes.
+				if (gtfs) {
+					if (gtfs.Stops) {
+						L.geoJson(gtfs.Stops, {
+							onEachFeature: function (feature, layer) {
+								layer.bindPopup(feature.properties.stop_name);
+							}
+						}).addTo(map);
+					}
+					if (gtfs.Shapes) {
+						L.geoJson(gtfs.Shapes).addTo(map);
+					}
+				}
 			}
 
 		}
