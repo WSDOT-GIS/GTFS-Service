@@ -28,3 +28,4 @@ _ReSharper*/
 *.vssscc
 $tf*/
 packages
+/GtfsService/App_Data/XmlDocument.xml

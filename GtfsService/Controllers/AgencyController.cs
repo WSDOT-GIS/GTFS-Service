@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Web.Http;
 using System.Web.Http.Results;
 
@@ -26,9 +27,25 @@ namespace GtfsService.Controllers
 			var url = ConfigurationManager.AppSettings["gtfs-url"].TrimEnd('/');
 			var urlSuffix = string.IsNullOrWhiteSpace(dataexchange_id) ? "/api/agencies" : string.Format("/api/agency?agency={0}", dataexchange_id);
 			url = url + urlSuffix;
-			HttpResponseMessage output = Request.CreateResponse(HttpStatusCode.Redirect);
-			output.Headers.Location = new Uri(url);
-			return output;
+			
+			////// This is how you would set up a redirect. However GTFS Data Exchange does not support CORS.
+			////HttpResponseMessage output = Request.CreateResponse(HttpStatusCode.Redirect);
+			////output.Headers.Location = new Uri(url);
+			////return output;
+
+			HttpResponseMessage message = null;
+
+			using (HttpClient client = new HttpClient())
+			{
+				client.DefaultRequestHeaders.Add("If-None-Match", Request.Headers.IfNoneMatch.Select(s => s.Tag));
+				client.GetAsync(url).ContinueWith(t => {
+					message = t.Result;
+				}).Wait();
+			}
+
+			message.Headers.CacheControl = new CacheControlHeaderValue();
+
+			return message;
 		}
 	}
 }
