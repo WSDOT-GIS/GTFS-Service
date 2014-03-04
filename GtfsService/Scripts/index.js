@@ -1,6 +1,13 @@
 ﻿(function () {
 	"use strict";
 
+	var map = L.map('map').setView([47.41322033015946, -120.80566406246835], 7);
+
+	L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+		maxZoom: 18
+	}).addTo(map);
+
 	/** @typedef {AgencyData}
 	 * @property {string} name
 	 * @property {string} dataexchange_id
@@ -25,6 +32,7 @@
 			});
 			select = document.getElementById("agencySelect");
 			select.appendChild(frag);
+			select.disabled = false;
 		} else {
 			console.error(this);
 		}
@@ -59,7 +67,6 @@
 				progress.max = 1;
 				progress.value = 0;
 			}
-			console.log("progress event", e);
 		}
 
 		/** Processes the GTFS data.
@@ -70,8 +77,7 @@
 			var gtfs;
 			progress.hidden = true;
 			if (e.target.status === 500) {
-				alert(e.target.response);
-				console.error(e.target.statusText);
+				alert("A server error occured when attempting to retrieve GTFS data.");
 			} else {
 				gtfs = e.target.response;
 				console.log("gtfs", gtfs);
