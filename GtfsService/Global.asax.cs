@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿#pragma warning disable 1591
+using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
 using System.Net.Http.Formatting;
@@ -28,7 +29,7 @@ namespace GtfsService
 
 		protected void Session_Start(object sender, EventArgs e)
 		{
-			
+
 		}
 
 		protected void Application_BeginRequest(object sender, EventArgs e)
@@ -57,3 +58,4 @@ namespace GtfsService
 		}
 	}
 }
+#pragma warning restore 0649

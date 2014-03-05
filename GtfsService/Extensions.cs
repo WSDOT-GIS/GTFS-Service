@@ -2,6 +2,9 @@
 
 namespace GtfsService
 {
+	/// <summary>
+	/// Provides extension methods.
+	/// </summary>
 	public static class Extensions
 	{
 		/// <summary>
