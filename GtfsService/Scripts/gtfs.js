@@ -97,7 +97,7 @@
 	}
 
 	Route.defaultColor = "FFFFFF";
-	Route.defaultTextColor = "000000"
+	Route.defaultTextColor = "000000";
 
 	function StopTime(data) {
 		this.trip_id = data.trip_id;
@@ -116,7 +116,6 @@
 		this.to_stop_id = data.to_stop_id;
 		this.transfer_type = data.transfer_type;
 		this.min_transfer_time = data.min_transfer_time || null;
-
 	}
 
 	function Trip(data) {
@@ -133,20 +132,42 @@
 	}
 
 	function Gtfs(data) {
-		this.Agency = data.Agency ? data.Agency.map(function (value) { return new Agency(value); }) : null;
-		this.Calendar = data.Calendar ? data.Calendar.map(function (value) { return new Calendar(value); }) : null;
-		this.CalendarDates = data.CalendarDates ? data.CalendarDates.map(function (value) { return new CalendarDate(value); }) : null;
-		this.FareAttributes = data.FareAttributes ? data.FareAttributes.map(function (value) { return new FareAttribute(value); }) : null;
-		this.FareRules = data.FareRules ? data.FareRules.map(function (value) { return new FareRule(value); }) : null;
 		this.FeedInfo = data.FeedInfo ? new FeedInfo(data.FeedInfo) : null;
-		this.Frequencies = data.Frequencies ? data.Frequencies.map(function (value) { return new Frequency(value); }) : null;
-		this.Routes = data.Routes ? data.Routes.map(function (value) { return new Route(value); }) : null;
+
+		this.Agency = data.Agency ? data.Agency.map(function (value) {
+			return new Agency(value);
+		}) : null;
+		this.Calendar = data.Calendar ? data.Calendar.map(function (value) {
+			return new Calendar(value);
+		}) : null;
+		this.CalendarDates = data.CalendarDates ? data.CalendarDates.map(function (value) {
+			return new CalendarDate(value);
+		}) : null;
+		this.FareAttributes = data.FareAttributes ? data.FareAttributes.map(function (value) {
+			return new FareAttribute(value);
+		}) : null;
+		this.FareRules = data.FareRules ? data.FareRules.map(function (value) {
+			return new FareRule(value);
+		}) : null;
+		this.Frequencies = data.Frequencies ? data.Frequencies.map(function (value) {
+			return new Frequency(value);
+		}) : null;
+		this.Routes = data.Routes ? data.Routes.map(function (value) {
+			return new Route(value);
+		}) : null;
+		this.StopTimes = data.StopTimes ? data.StopTimes.map(function (value) {
+			return new StopTime(value);
+		}) : null;
+		this.Transfers = data.Transfers ? data.Transfers.map(function (value) {
+			return new Transfer(value);
+		}) : null;
+		this.Trips = data.Trips ? data.Trips.map(function (value) {
+			return new Trip(value);
+		}) : null;
+
 		// For Shapes and Stops, try to create a Terraformer.FeatureCollection. If Terraformer isn't defined, instead just use the raw value.
 		this.Shapes = data.Shapes ? (Terraformer ? new Terraformer.FeatureCollection(data.Shapes) : data.Shapes) : null;
 		this.Stops = data.Stops ? (Terraformer ? new Terraformer.FeatureCollection(data.Stops) : data.Stops) : null;
-		this.StopTimes = data.StopTimes ? data.StopTimes.map(function (value) { return new StopTime(value); }) : null;
-		this.Transfers = data.Transfers ? data.Transfers.map(function (value) { return new Transfer(value); }) : null;
-		this.Trips = data.Trips ? data.Trips.map(function (value) { return new Trip(value); }) : null;
 	}
 
 	Gtfs.Agency = Agency;
@@ -160,7 +181,6 @@
 	Gtfs.StopTime = StopTime;
 	Gtfs.Transfer = Transfer;
 	Gtfs.Trip = Trip;
-
 
 	// Just return a value to define the module export.
 	// This example returns an object, but the module
