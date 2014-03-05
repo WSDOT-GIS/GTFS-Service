@@ -111,6 +111,7 @@
     <Content Include="Areas\HelpPage\HelpPage.css" />
     <Content Include="Global.asax" />
     <Content Include="index.html" />
+    <Content Include="Scripts\gtfs.js" />
     <Content Include="Scripts\index.js" />
     <Content Include="Web.config">
       <SubType>Designer</SubType>

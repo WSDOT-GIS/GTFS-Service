@@ -1,4 +1,4 @@
-﻿/*global L*/
+﻿/*global L,Gtfs*/
 (function () {
 	"use strict";
 
@@ -81,9 +81,10 @@
 				alert("A server error occured when attempting to retrieve GTFS data.");
 			} else {
 				gtfs = e.target.response;
-				console.log("gtfs", gtfs);
 				// Add GeoJSON layers for Stops and Shapes.
 				if (gtfs) {
+					gtfs = new Gtfs(gtfs);
+					console.log("gtfs", gtfs);
 					if (gtfs.Stops) {
 						L.geoJson(gtfs.Stops, {
 							onEachFeature: function (feature, layer) {
