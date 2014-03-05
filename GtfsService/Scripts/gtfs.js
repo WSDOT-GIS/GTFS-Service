@@ -129,7 +129,7 @@
 		this.block_id = data.block_id || null;
 		this.shape_id = data.shape_id || null;
 		this.wheelchair_accessible = data.wheelchair_accessible || null;
-		this.bikes_allowed = data.bikes_allowed === 1 ? true : data.bikes_allowed === 2 ? false : null;
+		this.bikes_allowed = data.bikes_allowed || null;
 	}
 
 	function Gtfs(data) {
