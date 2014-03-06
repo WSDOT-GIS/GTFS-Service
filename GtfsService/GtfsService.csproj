@@ -108,11 +108,15 @@
     <Reference Include="System.EnterpriseServices" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="arcgis-test.html" />
     <Content Include="Areas\HelpPage\HelpPage.css" />
     <Content Include="Global.asax" />
     <Content Include="index.html" />
+    <Content Include="Scripts\arcgis-test.js" />
     <Content Include="Scripts\gtfs.js" />
     <Content Include="Scripts\index.js" />
+    <Content Include="Stylesheets\arcgis-test.css" />
+    <Content Include="Stylesheets\arcgis-test.min.css" />
     <Content Include="Web.config">
       <SubType>Designer</SubType>
     </Content>
