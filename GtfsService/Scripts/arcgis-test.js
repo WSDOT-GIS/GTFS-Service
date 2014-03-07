@@ -1,4 +1,4 @@
-﻿/*global require, Terraformer*/
+﻿/*global require, Terraformer, Gtfs*/
 /*jshint browser:true*/
 require(["esri/map", "esri/graphic", "esri/layers/GraphicsLayer", "esri/renderers/SimpleRenderer"], function (Map, Graphic, GraphicsLayer, SimpleRenderer) {
 	"use strict";
@@ -163,6 +163,7 @@ require(["esri/map", "esri/graphic", "esri/layers/GraphicsLayer", "esri/renderer
 			if (e.target.status === 200) {
 				// Process the GTFS data if available.
 				gtfs = e.target.response;
+				gtfs = new Gtfs(gtfs);
 				if (gtfs) {
 					// Disable the option in the select for this agency so that its data can't be added a second time.
 					document.querySelector("option[value=" + agencyId + "]").disabled = true;
