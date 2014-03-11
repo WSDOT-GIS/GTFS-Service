@@ -113,6 +113,8 @@
     <Content Include="Global.asax" />
     <Content Include="index.html" />
     <Content Include="Scripts\arcgis-test.js" />
+    <Content Include="Scripts\arcgis\gtfs-layer-manager.js" />
+    <Content Include="Scripts\gtfs-agency-select.js" />
     <Content Include="Scripts\gtfs.js" />
     <Content Include="Scripts\index.js" />
     <Content Include="Stylesheets\arcgis-test.css" />
