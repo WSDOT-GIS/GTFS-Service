@@ -27,25 +27,32 @@ namespace GtfsService.Controllers
 			var url = ConfigurationManager.AppSettings["gtfs-url"].TrimEnd('/');
 			var urlSuffix = string.IsNullOrWhiteSpace(dataexchange_id) ? "/api/agencies" : string.Format("/api/agency?agency={0}", dataexchange_id);
 			url = url + urlSuffix;
-			
-			////// This is how you would set up a redirect. However GTFS Data Exchange does not support CORS.
-			////HttpResponseMessage output = Request.CreateResponse(HttpStatusCode.Redirect);
-			////output.Headers.Location = new Uri(url);
-			////return output;
 
-			HttpResponseMessage message = null;
-
-			using (HttpClient client = new HttpClient())
+			// If a callback parameter has been specified (i.e., a JSONP request), a redirect can be used.
+			// Otherwise, since GTFS Data Exchange does not support CORS, the response will merely be copied.
+			if (Request.GetQueryNameValuePairs().Count(s => s.Key == "callback") > 0)
 			{
-				client.DefaultRequestHeaders.Add("If-None-Match", Request.Headers.IfNoneMatch.Select(s => s.Tag));
-				client.GetAsync(url).ContinueWith(t => {
-					message = t.Result;
-				}).Wait();
+				HttpResponseMessage output = Request.CreateResponse(HttpStatusCode.Redirect);
+				output.Headers.Location = new Uri(url);
+				return output;
 			}
+			else
+			{
+				HttpResponseMessage message = null;
 
-			message.Headers.CacheControl = new CacheControlHeaderValue();
+				using (HttpClient client = new HttpClient())
+				{
+					client.DefaultRequestHeaders.Add("If-None-Match", Request.Headers.IfNoneMatch.Select(s => s.Tag));
+					client.GetAsync(url).ContinueWith(t =>
+					{
+						message = t.Result;
+					}).Wait();
+				}
 
-			return message;
+				message.Headers.CacheControl = new CacheControlHeaderValue();
+
+				return message;
+			}
 		}
 	}
 }
