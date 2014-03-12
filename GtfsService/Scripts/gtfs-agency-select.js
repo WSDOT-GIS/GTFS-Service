@@ -173,6 +173,9 @@
 		if (!select) {
 			throw new TypeError("The selectElement must be either an HTMLSelectElement or its \"id\".");
 		}
+
+		select.disabled = true;
+
 		// Add classes and option groups to select.
 		var frag = document.createDocumentFragment();
 		var option = document.createElement("option");
