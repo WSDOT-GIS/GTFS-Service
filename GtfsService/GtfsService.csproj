@@ -42,6 +42,9 @@
     <DocumentationFile>App_Data/XmlDocumentation.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="HtmlAgilityPack">
+      <HintPath>..\packages\HtmlAgilityPack.1.4.6\lib\Net45\HtmlAgilityPack.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Web.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <Private>True</Private>
@@ -108,11 +111,17 @@
     <Reference Include="System.EnterpriseServices" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="arcgis-test.html" />
     <Content Include="Areas\HelpPage\HelpPage.css" />
     <Content Include="Global.asax" />
     <Content Include="index.html" />
+    <Content Include="Scripts\arcgis-test.js" />
+    <Content Include="Scripts\arcgis\gtfs-layer-manager.js" />
+    <Content Include="Scripts\gtfs-agency-select.js" />
     <Content Include="Scripts\gtfs.js" />
     <Content Include="Scripts\index.js" />
+    <Content Include="Stylesheets\arcgis-test.css" />
+    <Content Include="Stylesheets\arcgis-test.min.css" />
     <Content Include="Web.config">
       <SubType>Designer</SubType>
     </Content>
@@ -150,12 +159,14 @@
     <Compile Include="Areas\HelpPage\XmlDocumentationProvider.cs" />
     <Compile Include="Controllers\AgencyController.cs" />
     <Compile Include="Controllers\FeedController.cs" />
+    <Compile Include="Controllers\GooglePublicFeedsController.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="FeedManager.cs" />
     <Compile Include="FeedRecord.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Google Public Feeds\PublicFeedTableReader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
