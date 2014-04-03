@@ -177,12 +177,8 @@ DateTimeOffset? lastModified = default(DateTimeOffset?),
 
 							client.GetStreamAsync(zipUri).ContinueWith(t =>
 							{
-
-								Task.Run(() =>
-								{
-									gtfs = GtfsReader.ReadGtfs(t.Result);
-								}).ContinueWith((gtfsTask) =>
-								{
+								t.Result.ReadGtfsAsync().ContinueWith(gtfsTask => {
+									gtfs = gtfsTask.Result;
 									// Delete the existing feedRecord.
 									if (feedRecord != null)
 									{
