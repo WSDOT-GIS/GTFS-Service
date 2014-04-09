@@ -25,9 +25,10 @@
 
 			progressMeter.hidden = true;
 
-			if (e.target.response.data) {
+			data = e.target.response.data || JSON.parse(e.target.response).data;
+
+			if (data) {
 				// Get the array of agencies.
-				data = e.target.response.data;
 				// Filter the array so that only those in WA remain.
 				data = data.filter(function (v) {
 					return v.state === "Washington";
@@ -113,15 +114,22 @@
 				if (e.target.status === 200) {
 					// Process the GTFS data if available.
 					gtfs = e.target.response;
+					if (typeof gtfs === "string") {
+						gtfs = JSON.parse(gtfs);
+					}
 					////gtfs = new Gtfs(gtfs);
 					if (gtfs) {
-						event = new CustomEvent("gtfsreturned", {
-							detail: {
-								agencyId: agencyId,
-								gtfs: gtfs,
-								request: e.target
-							}
-						});
+						try {
+							event = new CustomEvent("gtfsreturned", {
+								detail: {
+									agencyId: agencyId,
+									gtfs: gtfs,
+									request: e.target
+								}
+							});
+						} catch (err) {
+							console.error("error creating CustomEvent", err);
+						}
 						// Disable the option in the select for this agency so that its data can't be added a second time.
 						document.querySelector("option[value=" + agencyId + "]").disabled = true;
 						// Reset the select to the first element, "Select an agency...".
@@ -130,36 +138,46 @@
 
 						////layers = createLayersFromGtfs(gtfs, agencyId);
 					} else {
+						try {
+							event = new CustomEvent("gtfserror", {
+								detail: {
+									agencyId: agencyId,
+									error: 'Server returned "OK" status, but no GTFS data.',
+									request: e.target
+								}
+							});
+						} catch (err) {
+							console.error("error creating CustomEvent", err);
+						}
+					}
+				} else {
+					try {
 						event = new CustomEvent("gtfserror", {
 							detail: {
 								agencyId: agencyId,
-								error: 'Server returned "OK" status, but no GTFS data.',
+								error: "Error loading GTFS data",
 								request: e.target
 							}
 						});
+					} catch (err) {
+						console.error("error creating custom event", err);
 					}
-				} else {
-					event = new CustomEvent("gtfserror", {
-						detail: {
-							agencyId: agencyId,
-							error: "Error loading GTFS data",
-							request: e.target
-						}
-					});
 				}
-				select.dispatchEvent(event);
+				if (event) {
+					select.dispatchEvent(event);
+				}
 			}
 
 			agencyId = select.value;
 			url = "api/feed/" + agencyId;
 
 			feedRequest = new XMLHttpRequest();
-			feedRequest.responseType = "json";
 			feedRequest.addEventListener("loadstart", updateProgressMeter);
 			feedRequest.addEventListener("progress", updateProgressMeter);
 			feedRequest.addEventListener("loadend", handleFeedData);
 			feedRequest.addEventListener("loadend", updateProgressMeter);
 			feedRequest.open("GET", url);
+			feedRequest.responseType = "json";
 			feedRequest.send();
 		}
 
