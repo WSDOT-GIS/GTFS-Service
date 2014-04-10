@@ -218,7 +218,7 @@
 		this.select = select;
 
 		importButton = document.createElement("button");
-		importButton.innerText = "Import";
+		importButton.textContent = "Import";
 		importButton.title = "Import GTFS data for the selected agency";
 		importButton.disabled = true;
 		select.parentElement.appendChild(importButton);
