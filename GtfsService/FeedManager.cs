@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -125,15 +126,13 @@ DateTimeOffset? lastModified = default(DateTimeOffset?),
 					}
 					else if (t.Result.StatusCode == HttpStatusCode.OK)
 					{
-						t.Result.Content.ReadAsStringAsync().ContinueWith(strTask =>
-						{
-
-							Task.Factory.StartNew<AgencyResponse>(() => { 
-								return JsonConvert.DeserializeObject<AgencyResponse>(strTask.Result); 
-							}).ContinueWith(agencyResponseTask =>
+						t.Result.Content.ReadAsStreamAsync().ContinueWith(streamTask => {
+							using (var streamReader = new StreamReader(streamTask.Result))
+							using (var jsonReader = new JsonTextReader(streamReader))
 							{
-								agencyResponse = agencyResponseTask.Result;
-							}).Wait();
+								var serializer = JsonSerializer.Create();
+								agencyResponse = serializer.Deserialize<AgencyResponse>(jsonReader);
+							}
 						}).Wait();
 					}
 				}).Wait();
