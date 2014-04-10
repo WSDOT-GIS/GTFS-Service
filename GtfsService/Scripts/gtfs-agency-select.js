@@ -23,7 +23,7 @@
 		function populateAgenciesSelect(/*{XMLHttpRequestProgressEvent}*/ e) {
 			var data, officialFrag, unofficialFrag, unofficialGroup, officialGroup;
 
-			progressMeter.hidden = true;
+			progressMeter.setAttribute("hidden", "hidden");
 
 			data = e.target.response.data || JSON.parse(e.target.response).data;
 
@@ -70,11 +70,11 @@
 			} else if (request.readyState === 4) { // DONE
 				progressMeter.removeAttribute("value");
 				progressMeter.removeAttribute("max");
-				progressMeter.hidden = true;
+				progressMeter.setAttribute("hidden", "hidden");
 				select.hidden = false;
 			} else {
-				if (progressMeter.hidden) {
-					progressMeter.hidden = false;
+				if (progressMeter.getAttribute("hidden")) {
+					progressMeter.removeAttribute("hidden");
 				}
 				if (!select.hidden) {
 					select.hidden = true;
@@ -211,7 +211,7 @@
 
 		// Create the progress meter.
 		progressMeter = document.createElement("progress");
-		progressMeter.hidden = true;
+		progressMeter.setAttribute("hidden", "hidden");
 		// Add the progress meter after the select element.
 		select.parentElement.appendChild(progressMeter);
 
