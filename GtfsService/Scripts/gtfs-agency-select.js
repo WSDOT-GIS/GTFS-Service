@@ -112,42 +112,52 @@
 			function handleFeedData(/*{XMLHttpRequestProgressEvent}*/ e) {
 				var gtfs, event;
 				if (e.target.status === 200) {
-					// Process the GTFS data if available.
-					gtfs = e.target.response;
-					if (typeof gtfs === "string") {
-						gtfs = JSON.parse(gtfs);
-					}
-					////gtfs = new Gtfs(gtfs);
-					if (gtfs) {
-						try {
-							event = new CustomEvent("gtfsreturned", {
-								detail: {
-									agencyId: agencyId,
-									gtfs: gtfs,
-									request: e.target
-								}
-							});
-						} catch (err) {
-							console.error("error creating CustomEvent", err);
-						}
-						// Disable the option in the select for this agency so that its data can't be added a second time.
-						document.querySelector("option[value=" + agencyId + "]").disabled = true;
-						// Reset the select to the first element, "Select an agency...".
-						select.selectedIndex = 0;
-						importButton.disabled = true;
+					try {
 
-						////layers = createLayersFromGtfs(gtfs, agencyId);
-					} else {
-						try {
-							event = new CustomEvent("gtfserror", {
-								detail: {
-									agencyId: agencyId,
-									error: 'Server returned "OK" status, but no GTFS data.',
-									request: e.target
-								}
-							});
-						} catch (err) {
-							console.error("error creating CustomEvent", err);
+						// Process the GTFS data if available.
+						gtfs = e.target.response;
+						if (typeof gtfs === "string") {
+							gtfs = JSON.parse(gtfs);
+						}
+						////gtfs = new Gtfs(gtfs);
+						if (gtfs) {
+							try {
+								event = new CustomEvent("gtfsreturned", {
+									detail: {
+										agencyId: agencyId,
+										gtfs: gtfs,
+										request: e.target
+									}
+								});
+							} catch (err) {
+								console.error("error creating CustomEvent", err);
+							}
+							// Disable the option in the select for this agency so that its data can't be added a second time.
+							document.querySelector("option[value=" + agencyId + "]").disabled = true;
+							// Reset the select to the first element, "Select an agency...".
+							select.selectedIndex = 0;
+							importButton.disabled = true;
+
+							////layers = createLayersFromGtfs(gtfs, agencyId);
+						} else {
+							try {
+								event = new CustomEvent("gtfserror", {
+									detail: {
+										agencyId: agencyId,
+										error: 'Server returned "OK" status, but no GTFS data.',
+										request: e.target
+									}
+								});
+							} catch (err) {
+								console.error("error creating CustomEvent", err);
+							}
+						}
+					} catch (err) {
+						// "Not enough storage is available to complete this operation."
+						if (/Not enough storage is available to complete this operation./i.test(err.description)) {
+							alert("This browser cannot handle GTFS requests this large.\nPlease try a different web browser (e.g., Firefox or Chrome).");
+						} else {
+							throw err;
 						}
 					}
 				} else {
