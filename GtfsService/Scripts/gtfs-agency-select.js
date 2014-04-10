@@ -177,6 +177,7 @@
 			feedRequest.addEventListener("loadend", handleFeedData);
 			feedRequest.addEventListener("loadend", updateProgressMeter);
 			feedRequest.open("GET", url);
+			feedRequest.setRequestHeader("Accept", "application/json,text/json");
 			feedRequest.responseType = "json";
 			feedRequest.send();
 		}
