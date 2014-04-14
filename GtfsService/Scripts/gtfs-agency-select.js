@@ -8,6 +8,7 @@
 		root.GtfsAgencySelect = factory();
 	}
 }(this, function () {
+
 	/** Creates a GtfsAgencySelect.
 	 * @param {(HTMLSelectElement|string)} selectElement - An existing select element or its "id" attribute.
 	 * @constructor
@@ -17,13 +18,28 @@
 
 		var select, progressMeter, importButton;
 
+		/**
+		 * Sets the visibility of the progress meter
+		 * @param {Boolean} visible
+		 */
+		function setProgressMeterVisibility(visible) {
+			if (visible) {
+				// Setting the "style.visibility" property is for browsers that don't properly support the hidden property (e.g., IE 10).
+				progressMeter.style.visibility = "";
+				progressMeter.hidden = false;
+			} else {
+				progressMeter.style.visibility = "hidden";
+				progressMeter.hidden = true;
+			}
+		}
+
 		/** 
 		 * Populates the list of agencies.
 		 */
 		function populateAgenciesSelect(/*{XMLHttpRequestProgressEvent}*/ e) {
 			var data, officialFrag, unofficialFrag, unofficialGroup, officialGroup;
 
-			progressMeter.setAttribute("hidden", "hidden");
+			setProgressMeterVisibility(false);
 
 			data = e.target.response.data || JSON.parse(e.target.response).data;
 
@@ -70,12 +86,10 @@
 			} else if (request.readyState === 4) { // DONE
 				progressMeter.removeAttribute("value");
 				progressMeter.removeAttribute("max");
-				progressMeter.setAttribute("hidden", "hidden");
+				setProgressMeterVisibility(false);
 				select.hidden = false;
 			} else {
-				if (progressMeter.getAttribute("hidden")) {
-					progressMeter.removeAttribute("hidden");
-				}
+				setProgressMeterVisibility(true);
 				if (!select.hidden) {
 					select.hidden = true;
 				}
@@ -222,9 +236,10 @@
 
 		// Create the progress meter.
 		progressMeter = document.createElement("progress");
-		progressMeter.setAttribute("hidden", "hidden");
+		progressMeter.textContent = "Loading GTFS data...";
 		// Add the progress meter after the select element.
 		select.parentElement.appendChild(progressMeter);
+		setProgressMeterVisibility(false);
 
 		this.select = select;
 
